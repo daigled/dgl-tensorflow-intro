@@ -8,4 +8,9 @@ AI/ML for Coders.
 Run `pip install -r requirements.txt` to install dependencies.
 
 ## Usage
-Run `python main.py` to execute the program.
+Run `python {target_script}.py` to run a script.
+
+## Datasets
+`tf.keras.datasets`
+
+[Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist); used in `002-computer-vision.py`
