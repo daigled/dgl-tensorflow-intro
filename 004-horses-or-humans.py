@@ -7,7 +7,7 @@ import numpy as np
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.optimizers import RMSprop
 
-# Computer Vision: CNN
+# Computer Vision: Image Augmentation
 # Training Data: Horses or Humans
 # Helpful: https://github.com/tensorflow/datasets/blob/master/tensorflow_datasets/image_classification/horses_or_humans.py
 
