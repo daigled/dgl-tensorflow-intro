@@ -13,6 +13,7 @@ def main():
     # Initialization
     data = tf.keras.datasets.fashion_mnist
     (training_images, training_labels), (test_images, test_labels) = data.load_data()
+
     callbacks = myCallback()
 
     # Normalization
@@ -34,6 +35,9 @@ def main():
         # Debugging note: if we use relu as the activation function for the output layer instead of softmax,
         #   accuracy never reaches a value higher than .10 - why?
     ])
+
+    # Give a summary of the shape of the model so far
+    model.summary()
 
     # Model Training
     model.compile(

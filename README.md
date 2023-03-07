@@ -14,3 +14,6 @@ Run `python {target_script}.py` to run a script.
 `tf.keras.datasets`
 
 [Fashion MNIST](https://github.com/zalandoresearch/fashion-mnist); used in `002-computer-vision.py`
+and `003-computer-vision-cnn.py`
+
+[Horses or Humans](https://laurencemoroney.com/datasets.html); used in `004-horses-or-humans-cnn.py`
