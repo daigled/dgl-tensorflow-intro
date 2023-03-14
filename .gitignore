@@ -1,3 +1,5 @@
 .idea/
 *.zip
+*.h5
 horse-or-human/
+tmp/

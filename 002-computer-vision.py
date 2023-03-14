@@ -1,10 +1,11 @@
 import tensorflow as tf
+
 data = tf.keras.datasets.fashion_mnist
 
 
 class myCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epochs, logs={}):
-        if logs.get('accuracy') > 0.95:
+        if logs.get("accuracy") > 0.95:
             print("\nReached 95% accuracy, training complete")
             self.model.stop_training = True
 
@@ -27,29 +28,33 @@ def main():
     # activation = Activation Function, the code which will execute on each neuron in the layer. relu = Rectified
     #   Linear Unit, which is a function which will return a value if it's greater than 0 (we don't want negative values
     #   passed to the next layer as this may impact summing function).
-    model = tf.keras.models.Sequential([
-        # Flatten: not a layer of neurons, but an input layer specification. Takes our "square" input of 28x28 pixels
-        #   and "flattens" it into a 1D array
-        tf.keras.layers.Flatten(input_shape=(28, 28)),
-        # After the input layer we specify a hidden layer. The number of neurons in a "hidden" layer is arbitrary.
-        #   More neurons means it will run slower because it has to learn more parameters.
-        #   More neurons could lead to a NN which is great a recognizing training data,
-        #   but sucks at recognizing new input ("overfitting"). Key idea is to have enough neurons to recognize key
-        #   parameters of the dataset. ("Hyperparameter tuning")
-        # Hyperparameters are values used to control training, Parameters are the internal values of the neurons
-        #   that get trained.
-        tf.keras.layers.Dense(128, activation=tf.nn.relu),
-        # After the hidden layer, we declare our output layer. It has 10 neurons because there are 10 classes of images
-        #   for us to choose from in the Fashion MNIST dataset. Each of these neurons will end up with probability
-        #   values. We will choose the neuron with the highest value. We could loop over them ourselves, but instead
-        #   we use the softmax activation function which will do that for us.
-        tf.keras.layers.Dense(10, activation=tf.nn.softmax)
-    ])
+    model = tf.keras.models.Sequential(
+        [
+            # Flatten: not a layer of neurons, but an input layer specification. Takes our "square" input of 28x28 pixels
+            #   and "flattens" it into a 1D array
+            tf.keras.layers.Flatten(input_shape=(28, 28)),
+            # After the input layer we specify a hidden layer. The number of neurons in a "hidden" layer is arbitrary.
+            #   More neurons means it will run slower because it has to learn more parameters.
+            #   More neurons could lead to a NN which is great a recognizing training data,
+            #   but sucks at recognizing new input ("overfitting"). Key idea is to have enough neurons to recognize key
+            #   parameters of the dataset. ("Hyperparameter tuning")
+            # Hyperparameters are values used to control training, Parameters are the internal values of the neurons
+            #   that get trained.
+            tf.keras.layers.Dense(128, activation=tf.nn.relu),
+            # After the hidden layer, we declare our output layer. It has 10 neurons because there are 10 classes of images
+            #   for us to choose from in the Fashion MNIST dataset. Each of these neurons will end up with probability
+            #   values. We will choose the neuron with the highest value. We could loop over them ourselves, but instead
+            #   we use the softmax activation function which will do that for us.
+            tf.keras.layers.Dense(10, activation=tf.nn.softmax),
+        ]
+    )
 
     # Why a different loss function here than the one we used in 001? Rather than determining a single value, in this
     #   case we're making a categorical selection.
     # The adam optimizer is a faster, more efficient sgd
-    model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    model.compile(
+        optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+    )
 
     # Train our model to fit the training labels against the training images and do it 5 times
     # What happens when you set the epochs to 50? The model becomes Overfitted to the training data!
@@ -62,7 +67,9 @@ def main():
     model.evaluate(test_images, test_labels)
 
     classifications = model.predict(test_images)
-    print(classifications[0])  # This will show us the classification of the first test image
+    print(
+        classifications[0]
+    )  # This will show us the classification of the first test image
     print(test_labels[0])  # This will show us the first test_label
 
     # classifications[0]: [4.0213631e-06 4.1354369e-08 7.5193702e-07 4.1364012e-07 1.0317174e-07
@@ -76,6 +83,5 @@ def main():
     #   the right way
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

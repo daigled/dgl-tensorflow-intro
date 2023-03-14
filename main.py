@@ -1,133 +1,205 @@
+import keras.models
 import tensorflow as tf
-import urllib.request
-import os
-import numpy as np
-
-# Transfer Learning - related libs
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras import layers
-from tensorflow.keras import Model
-from tensorflow.keras.applications.inception_v3 import InceptionV3
-from tensorflow.keras.optimizers import RMSprop
 
-# Computer Vision: Transfer Learning
-# Training Data: Horses or Humans
-# Helpful: https://github.com/tensorflow/datasets/blob/master/tensorflow_datasets/image_classification/horses_or_humans.py
+import urllib.request
+import zipfile
+import os
+import progressbar
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+
+pbar = None
+
+
+def show_progress(block_num, block_size, total_size):
+    global pbar
+    if pbar is None:
+        pbar = progressbar.ProgressBar(maxval=total_size)
+        pbar.start()
+
+    downloaded = block_num * block_size
+    if downloaded < total_size:
+        pbar.update(downloaded)
+    else:
+        pbar.finish()
+        pbar = None
+
+
+def fetch_data(target_url, filename):
+    target_directory = f"./tmp/"
+    filename = filename + ".zip"
+
+    try:
+        zip_ref = zipfile.ZipFile(filename, "r")
+    except FileNotFoundError:
+        print(f"no local copy found, fetching data from {target_url}")
+        urllib.request.urlretrieve(target_url, filename, show_progress)
+        zip_ref = zipfile.ZipFile(filename, "r")
+
+    zip_ref.extractall(target_directory)
+    zip_ref.close()
+    print(f"data successfully retrieved, and wrote {filename} to {target_directory}")
+
+
+def show_sample_data():
+    # Setup Local Context
+    rock_dir = os.path.join("./tmp/rps/rock")
+    paper_dir = os.path.join("./tmp/rps/paper")
+    scissors_dir = os.path.join("./tmp/rps/scissors")
+
+    print("total training rock images:", len(os.listdir(rock_dir)))
+    print("total training paper images:", len(os.listdir(paper_dir)))
+    print("total training scissors images:", len(os.listdir(scissors_dir)))
+
+    rock_files = os.listdir(rock_dir)
+    print(rock_files[:10])
+
+    paper_files = os.listdir(paper_dir)
+    print(paper_files[:10])
+
+    scissors_files = os.listdir(scissors_dir)
+    print(scissors_files[:10])
+
+    # Visualize Some Stuff
+    pic_index = 2
+
+    next_rock = [
+        os.path.join(rock_dir, fname) for fname in rock_files[pic_index - 2 : pic_index]
+    ]
+    next_paper = [
+        os.path.join(paper_dir, fname)
+        for fname in paper_files[pic_index - 2 : pic_index]
+    ]
+    next_scissors = [
+        os.path.join(scissors_dir, fname)
+        for fname in scissors_files[pic_index - 2 : pic_index]
+    ]
+
+    for i, img_path in enumerate(next_rock + next_paper + next_scissors):
+        # print(img_path)
+        img = mpimg.imread(img_path)
+        plt.imshow(img)
+        plt.axis("Off")
+        plt.show()
+
+
+def getImageGenerator(type=None):
+    if type == "IMG_AUG":
+        return ImageDataGenerator(
+            rescale=1.0 / 255,
+            rotation_range=40,
+            width_shift_range=0.2,
+            height_shift_range=0.2,
+            shear_range=0.2,
+            zoom_range=0.2,
+            horizontal_flip=True,
+            fill_mode="nearest",
+        )
+
+    return ImageDataGenerator(rescale=1.0 / 255)
 
 
 class myCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epochs, logs={}):
-        if logs.get('acc') > 0.95:
+        if logs.get("acc") > 0.95:
             print("\nReached 95% accuracy, training complete")
             self.model.stop_training = True
-
-
-def test_images(model):
-    # Test Model with manually selected images
-    image_path = 'assets/horses-and-humans-photos/'
-
-    for item in os.listdir(image_path):
-        img = tf.keras.preprocessing.image.load_img(image_path+item, target_size=(150, 150))
-
-        x = tf.keras.preprocessing.image.img_to_array(img)
-
-        x = np.expand_dims(x, axis=0)
-
-        image_tensor = np.vstack([x])
-
-        classes = model.predict(image_tensor)
-
-        print("\nPrediction Time:")
-        print(classes)
-        print(classes[0])
-
-        if classes[0] > 0.5:
-            print(item + " is a human")
-        else:
-            print(item + " is a horse")
 
 
 def main():
     callbacks = myCallback()
 
-    # Setup
-    validation_datagen = ImageDataGenerator(rescale=1 / 255)
+    # Fetch Training Data
+    TRAINING_DATA_URL = "https://storage.googleapis.com/learning-datasets/rps.zip"
+    TRAINING_DATA_FILENAME = "rps"
+    fetch_data(TRAINING_DATA_URL, TRAINING_DATA_FILENAME)
 
-    train_datagen = ImageDataGenerator(
-        rescale=1 / 255,
-        rotation_range=40,  # rotate each image randomly up to 40deg left or right
-        width_shift_range=0.2,  # translate each image up to 20% along X axis
-        height_shift_range=0.2,  # translate each image up to 20% along Y axis
-        shear_range=0.2,  # shear each image up to 20%
-        zoom_range=0.2,  # zoom each image up to 20%
-        horizontal_flip=True,  # randomly flip the image horizontally or vertically
-        fill_mode='nearest'  # fill any missing pixels after a move or shear with the nearest neighbors
+    # Fetch Testing Data
+    TESTING_DATA_URL = (
+        "https://storage.googleapis.com/learning-datasets/rps-test-set.zip"
     )
+    TESTING_DATA_FILENAME = "rps-test-set"
+    fetch_data(TESTING_DATA_URL, TESTING_DATA_FILENAME)
 
-    training_dir = "horse-or-human/training"
-    validation_dir = "horse-or-human/validation"
+    # show_sample_data()
 
-    train_generator = train_datagen.flow_from_directory(
-        training_dir,
+    TRAINING_DIR = "./tmp/rps"
+    training_datagen = getImageGenerator(type="IMG_AUG")
+
+    VALIDATION_DIR = "./tmp/rps"
+    validation_datagen = getImageGenerator()
+
+    training_generator = training_datagen.flow_from_directory(
+        TRAINING_DIR,
         target_size=(150, 150),
-        class_mode='binary'
+        class_mode="categorical",  # NB: binary class_mode won't work here since we have more than 2 classes
     )
 
     validation_generator = validation_datagen.flow_from_directory(
-        validation_dir,
-        target_size=(150, 150),
-        class_mode='binary'
+        VALIDATION_DIR, target_size=(150, 150), class_mode="categorical"
     )
 
-    # Call in pre-existing layers
-    weights_url = "https://storage.googleapis.com/mledu-datasets/inception_v3_weights_tf_dim_ordering_tf_kernels_notop.h5"
-    weights_file = "inception_v3.h5"
+    try:
+        model = keras.models.load_model("rps.h5")
+    except OSError:
+        model = tf.keras.models.Sequential(
+            [
+                # Note the input shape is the desired size of the image 150x150 with 3 bytes color
+                # This is the first convolution
+                tf.keras.layers.Conv2D(
+                    64, (3, 3), activation="relu", input_shape=(150, 150, 3)
+                ),
+                tf.keras.layers.MaxPooling2D(2, 2),
+                # The second convolution
+                tf.keras.layers.Conv2D(64, (3, 3), activation="relu"),
+                tf.keras.layers.MaxPooling2D(2, 2),
+                # The third convolution
+                tf.keras.layers.Conv2D(128, (3, 3), activation="relu"),
+                tf.keras.layers.MaxPooling2D(2, 2),
+                # The fourth convolution
+                tf.keras.layers.Conv2D(128, (3, 3), activation="relu"),
+                tf.keras.layers.MaxPooling2D(2, 2),
+                # Flatten the results to feed into a DNN
+                tf.keras.layers.Flatten(),
+                # This Dropout layer will at random remove 50% of the input neurons
+                tf.keras.layers.Dropout(0.5),
+                # 512 neuron hidden layer
+                tf.keras.layers.Dense(512, activation="relu"),
+                tf.keras.layers.Dense(3, activation="softmax"),
+            ]
+        )
 
-    urllib.request.urlretrieve(weights_url, weights_file)
+    model.summary()
 
-    # Load Existing Layers into model
-    pre_trained_model = InceptionV3(
-        input_shape=(150, 150, 3),
-        include_top=False,
-        weights=None
+    model.compile(loss="categorical_crossentropy", optimizer="rmsprop", metrics=["acc"])
+
+    history = model.fit(
+        training_generator,
+        epochs=25,
+        validation_data=validation_generator,
+        verbose=1,
+        callbacks=callbacks,
     )
 
-    pre_trained_model.load_weights(weights_file)
+    model.save("rps_test.h5")
 
-    # Summarize Pre-Trained Model
-    pre_trained_model.summary()
+    # Visualize Result
+    acc = history.history["acc"]
+    val_acc = history.history["val_acc"]
+    loss = history.history["loss"]
+    val_loss = history.history["val_loss"]
 
-    # Freeze Pre-Trained Model Layers
-    for layer in pre_trained_model.layers:
-        layer.trainable = False
+    epochs = range(len(acc))
 
-    # Capture the last layer of output that we're interested in from the pre-existing model
-    last_layer = pre_trained_model.get_layer('mixed7')
-    print('last layer output shape:  ', last_layer.output_shape)
-    last_output = last_layer.output
+    plt.plot(epochs, acc, "r", label="Training accuracy")
+    plt.plot(epochs, val_acc, "b", label="Validation accuracy")
+    plt.title("Training and validation accuracy")
+    plt.legend(loc=0)
+    plt.figure()
 
-    # Build the layers of our own model underneath the pre-existing layers
-    # Flatten captured output layer to 1 dimension
-    my_model_layers = layers.Flatten()(last_output)
-    # Now let's add a fully connected layer with 1024 hidden neurons and ReLU activation
-    my_model_layers = layers.Dense(1024, activation='relu')(my_model_layers)
-    # Let's add a final sigmoid layer for classification
-    my_model_layers = layers.Dense(1, activation='sigmoid')(my_model_layers)
-
-    model = Model(pre_trained_model.input, my_model_layers)
-
-    model.compile(optimizer=RMSprop(learning_rate=0.001), loss='binary_crossentropy', metrics=['acc'])
-
-    model.fit(
-        train_generator,
-        epochs=15,
-        callbacks=[callbacks],
-        validation_data=validation_generator
-    )
-
-    test_images(model=model)
+    plt.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

@@ -17,17 +17,19 @@ from tensorflow.keras.optimizers import RMSprop
 
 class myCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epochs, logs={}):
-        if logs.get('acc') > 0.95:
+        if logs.get("acc") > 0.95:
             print("\nReached 95% accuracy, training complete")
             self.model.stop_training = True
 
 
 def test_images(model):
     # Test Model with manually selected images
-    image_path = 'assets/horses-and-humans-photos/'
+    image_path = "assets/horses-and-humans-photos/"
 
     for item in os.listdir(image_path):
-        img = tf.keras.preprocessing.image.load_img(image_path+item, target_size=(150, 150))
+        img = tf.keras.preprocessing.image.load_img(
+            image_path + item, target_size=(150, 150)
+        )
 
         x = tf.keras.preprocessing.image.img_to_array(img)
 
@@ -61,22 +63,18 @@ def main():
         shear_range=0.2,  # shear each image up to 20%
         zoom_range=0.2,  # zoom each image up to 20%
         horizontal_flip=True,  # randomly flip the image horizontally or vertically
-        fill_mode='nearest'  # fill any missing pixels after a move or shear with the nearest neighbors
+        fill_mode="nearest",  # fill any missing pixels after a move or shear with the nearest neighbors
     )
 
     training_dir = "horse-or-human/training"
     validation_dir = "horse-or-human/validation"
 
     train_generator = train_datagen.flow_from_directory(
-        training_dir,
-        target_size=(150, 150),
-        class_mode='binary'
+        training_dir, target_size=(150, 150), class_mode="binary"
     )
 
     validation_generator = validation_datagen.flow_from_directory(
-        validation_dir,
-        target_size=(150, 150),
-        class_mode='binary'
+        validation_dir, target_size=(150, 150), class_mode="binary"
     )
 
     # Call in pre-existing layers
@@ -87,9 +85,7 @@ def main():
 
     # Load Existing Layers into model
     pre_trained_model = InceptionV3(
-        input_shape=(150, 150, 3),
-        include_top=False,
-        weights=None
+        input_shape=(150, 150, 3), include_top=False, weights=None
     )
 
     pre_trained_model.load_weights(weights_file)
@@ -102,32 +98,35 @@ def main():
         layer.trainable = False
 
     # Capture the last layer of output that we're interested in from the pre-existing model
-    last_layer = pre_trained_model.get_layer('mixed7')
-    print('last layer output shape:  ', last_layer.output_shape)
+    last_layer = pre_trained_model.get_layer("mixed7")
+    print("last layer output shape:  ", last_layer.output_shape)
     last_output = last_layer.output
 
     # Build the layers of our own model underneath the pre-existing layers
     # Flatten captured output layer to 1 dimension
     my_model_layers = layers.Flatten()(last_output)
     # Now let's add a fully connected layer with 1024 hidden neurons and ReLU activation
-    my_model_layers = layers.Dense(1024, activation='relu')(my_model_layers)
+    my_model_layers = layers.Dense(1024, activation="relu")(my_model_layers)
     # Let's add a final sigmoid layer for classification
-    my_model_layers = layers.Dense(1, activation='sigmoid')(my_model_layers)
+    my_model_layers = layers.Dense(1, activation="sigmoid")(my_model_layers)
 
     model = Model(pre_trained_model.input, my_model_layers)
 
-    model.compile(optimizer=RMSprop(learning_rate=0.001), loss='binary_crossentropy', metrics=['acc'])
+    model.compile(
+        optimizer=RMSprop(learning_rate=0.001),
+        loss="binary_crossentropy",
+        metrics=["acc"],
+    )
 
     model.fit(
         train_generator,
         epochs=15,
         callbacks=[callbacks],
-        validation_data=validation_generator
+        validation_data=validation_generator,
     )
 
     test_images(model=model)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

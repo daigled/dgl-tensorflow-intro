@@ -21,7 +21,7 @@ def main():
     # loss: Loss Function; that's how our model will gauge how good or bad its guess is.
     # optimizer: uses the feedback from the Loss Function to change the next guess.
     # sgd = Stochiastic Gradient.
-    model.compile(optimizer='sgd', loss='mean_squared_error')
+    model.compile(optimizer="sgd", loss="mean_squared_error")
 
     xs = np.array([-1.0, 0.0, 1.0, 2.0, 3.0, 4.0], dtype=float)
     ys = np.array([-3.0, -1.0, 1.0, 3.0, 5.0, 7.0], dtype=float)
@@ -40,6 +40,5 @@ def main():
     print("Here is what I learned: {}".format(l0.get_weights()))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-

@@ -1,4 +1,7 @@
 tensorflow
+tensorflow-datasets
 numpy
 scipy
 pillow
+progressbar
+matplotlib
