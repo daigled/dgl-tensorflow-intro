@@ -5,3 +5,5 @@ scipy
 pillow
 progressbar
 matplotlib
+pre-commit
+pytest
